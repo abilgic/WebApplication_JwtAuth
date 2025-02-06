@@ -1,6 +1,8 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
+using WebApplication_JwtAuth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +11,35 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(
+    c =>
+    {
+        c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "WebApplication_JwtAuth", Version = "v1"});
+        c.AddSecurityDefinition("bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            Description = "Bearer Token(JWT) kullanılmıştır.",
+            Name = "Authorization",
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            Scheme = JwtBearerDefaults.AuthenticationScheme,
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http
+        });
+
+        c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id ="bearer"
+                    }                    
+                },
+                new List<string>()
+            }
+        });
+    });
+
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -20,9 +50,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = "http://localhost:5000",
-            ValidAudience = "http://localhost:5000",
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("57A9890E-11DE-4A82-9B99-00A425C17BE2"))
+            ValidIssuer = TokenService.ISSUER,
+            ValidAudience = TokenService.AUDIENCE,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TokenService.SECRETKEY))
         };
 
     }
